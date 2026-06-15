@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # dispara em: v1.0.0, v2.3.1, etc.
+
+# Permissões mínimas necessárias:
+#   contents:write    → criar release e fazer upload de assets
+#   id-token:write    → emitir token OIDC para a attestation SLSA
+#   attestations:write → publicar a provenance no GitHub
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout completo (fetch-depth:0 garante acesso ao histórico de tags) ──
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      # ── 2. Go — versão lida do go.mod, cache automático ──────────────────────────
+      - name: Setup Go
+        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # ── 3. Sanidade do código ─────────────────────────────────────────────────────
+      - name: Vet
+        run: go vet ./...
+        env:
+          GOOS: windows
+          GOARCH: amd64
+
+      # ── 4. Build cross-compilado para Windows amd64 ───────────────────────────────
+      #   -trimpath    remove caminhos do sistema de build do binário (privacy + reprodutibilidade)
+      #   -s -w        strip de símbolos e tabela DWARF (reduz tamanho)
+      #   -X main.*    injeta versão, commit e horário de build no binário
+      - name: Build
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "0"
+        run: |
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          COMMIT=${GITHUB_SHA::7}
+          go build \
+            -trimpath \
+            -buildvcs=false \
+            -ldflags="-s -w \
+              -X main.version=${{ github.ref_name }} \
+              -X main.commit=${GITHUB_SHA} \
+              -X main.buildTime=${BUILD_TIME}" \
+            -o auditor_forense.exe .
+
+      # ── 5. Hash SHA-256 verificável ───────────────────────────────────────────────
+      #   O arquivo .sha256.txt usa o formato padrão do sha256sum(1),
+      #   verificável offline com: sha256sum -c auditor_forense.exe.sha256.txt
+      - name: Generate SHA-256
+        id: hash
+        run: |
+          HASH=$(sha256sum auditor_forense.exe | awk '{print $1}')
+          echo "value=${HASH}" >> "$GITHUB_OUTPUT"
+          printf '%s  auditor_forense.exe\n' "${HASH}" > auditor_forense.exe.sha256.txt
+          echo "### SHA-256 do binário" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat auditor_forense.exe.sha256.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 6. SLSA Provenance Attestation ───────────────────────────────────────────
+      #   Gera e publica no GitHub a cadeia de proveniência do build (SLSA Level 2).
+      #   Verificação posterior: gh attestation verify auditor_forense.exe --repo <owner>/<repo>
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@520d128f165991a6c774bcb264f7f9ac2ed5ea52 # v2.2.0
+        with:
+          subject-path: auditor_forense.exe
+
+      # ── 7. GitHub Release com assets e notas geradas automaticamente ─────────────
+      - name: Create Release
+        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.2.0
+        with:
+          name: "Auditor Forense ${{ github.ref_name }}"
+          generate_release_notes: true
+          files: |
+            auditor_forense.exe
+            auditor_forense.exe.sha256.txt
+          body: |
+            ## Informações do build
+
+            | Campo        | Valor |
+            |---|---|
+            | Versão       | `${{ github.ref_name }}` |
+            | Commit       | `${{ github.sha }}` |
+            | Workflow run | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+            ## Verificação de integridade
+
+            **SHA-256:** `${{ steps.hash.outputs.value }}`
+
+            **Windows (PowerShell):**
+            ```powershell
+            (Get-FileHash .\auditor_forense.exe -Algorithm SHA256).Hash
+            # deve retornar: ${{ steps.hash.outputs.value }}
+            ```
+
+            **Linux / macOS:**
+            ```sh
+            sha256sum -c auditor_forense.exe.sha256.txt
+            ```
+
+            ## Verificação de proveniência (SLSA)
+
+            Confirma que o binário foi produzido por este repositório, neste commit, sem adulteração:
+
+            ```sh
+            gh attestation verify auditor_forense.exe \
+              --repo ${{ github.repository }}
+            ```
+
+            > A attestation é publicada no [GitHub Artifact Attestations](${{ github.server_url }}/${{ github.repository }}/attestations)
+            > e vinculada imutavelmente ao commit `${{ github.sha }}`.

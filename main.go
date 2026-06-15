@@ -27,6 +27,14 @@ import (
 	"auditor-processos/pkg/winlogs"
 )
 
+// Variáveis injetadas via -ldflags em tempo de build pelo CI.
+// Em builds locais mantêm os valores padrão "dev".
+var (
+	version   = "dev"
+	commit    = "unknown"
+	buildTime = "unknown"
+)
+
 func main() {
 	color.EnableVT()
 	printBanner()
@@ -133,7 +141,11 @@ func printBanner() {
 	fmt.Printf("\n%s%s╔%s╗%s\n", color.Bold, color.Cyan, sep, color.Reset)
 	fmt.Printf("%s%s║  AUDITOR FORENSE — RAGNARÖK ONLINE ANTI-CHEAT                    ║%s\n", color.Bold, color.Cyan, color.Reset)
 	fmt.Printf("%s%s║  Coleta de Evidências para Parecer Técnico Judicial               ║%s\n", color.Bold, color.Cyan, color.Reset)
-	fmt.Printf("%s%s╚%s╝%s\n\n", color.Bold, color.Cyan, sep, color.Reset)
+	fmt.Printf("%s%s╚%s╝%s\n", color.Bold, color.Cyan, sep, color.Reset)
+	fmt.Printf("  %sversão %s%s  commit %s  build %s%s\n\n",
+		color.Yellow, version, color.Reset,
+		commit[:min(len(commit), 7)],
+		buildTime, color.Reset)
 }
 
 func printFinalReport(zipPath, sha256sum string) {
