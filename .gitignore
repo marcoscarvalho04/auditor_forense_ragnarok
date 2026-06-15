@@ -1,0 +1,77 @@
+# ── Binários e artefatos de build ─────────────────────────────────────────────
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ── Evidências forenses geradas pelo utilitário ────────────────────────────────
+# Nunca versionar capturas de dados de máquinas de usuários.
+evidencias_ragnarok/
+
+# ── Go toolchain ───────────────────────────────────────────────────────────────
+# go.sum deve ser versionado; vendor/ normalmente não.
+vendor/
+/pkg/
+
+# Cobertura e perfis de performance
+*.coverprofile
+coverage.out
+cpu.prof
+mem.prof
+
+# ── Sistemas Operacionais ──────────────────────────────────────────────────────
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+
+# ── IDEs e editores ────────────────────────────────────────────────────────────
+# VS Code
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains (GoLand, IntelliJ)
+.idea/
+*.iml
+*.iws
+
+# Vim / Neovim
+*.swp
+*.swo
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+Session.vim
+.netrwhist
+
+# Emacs
+\#*\#
+.\#*
+
+# ── Variáveis de ambiente e segredos ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ── Logs e temporários ─────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+*.orig
