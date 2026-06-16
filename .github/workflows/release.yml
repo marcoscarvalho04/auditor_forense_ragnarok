@@ -6,8 +6,8 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'   # dispara em: v1.0.0, v2.3.1, etc.
 
 # Permissões mínimas necessárias:
-#   contents:write    → criar release e fazer upload de assets
-#   id-token:write    → emitir token OIDC para a attestation SLSA
+#   contents:write     → criar release e fazer upload de assets
+#   id-token:write     → emitir token OIDC para a attestation SLSA
 #   attestations:write → publicar a provenance no GitHub
 permissions:
   contents: write
@@ -22,13 +22,13 @@ jobs:
     steps:
       # ── 1. Checkout completo (fetch-depth:0 garante acesso ao histórico de tags) ──
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       # ── 2. Go — versão lida do go.mod, cache automático ──────────────────────────
       - name: Setup Go
-        uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
@@ -41,9 +41,10 @@ jobs:
           GOARCH: amd64
 
       # ── 4. Build cross-compilado para Windows amd64 ───────────────────────────────
-      #   -trimpath    remove caminhos do sistema de build do binário (privacy + reprodutibilidade)
-      #   -s -w        strip de símbolos e tabela DWARF (reduz tamanho)
-      #   -X main.*    injeta versão, commit e horário de build no binário
+      #   -trimpath     remove caminhos do sistema de build do binário (privacy + reprodutibilidade)
+      #   -s -w         strip de símbolos e tabela DWARF (reduz tamanho)
+      #   -buildvcs=false  build limpo mesmo sem histórico VCS completo
+      #   -X main.*     injeta versão, commit e horário de build no binário
       - name: Build
         env:
           GOOS: windows
@@ -51,7 +52,6 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          COMMIT=${GITHUB_SHA::7}
           go build \
             -trimpath \
             -buildvcs=false \
@@ -62,8 +62,8 @@ jobs:
             -o auditor_forense.exe .
 
       # ── 5. Hash SHA-256 verificável ───────────────────────────────────────────────
-      #   O arquivo .sha256.txt usa o formato padrão do sha256sum(1),
-      #   verificável offline com: sha256sum -c auditor_forense.exe.sha256.txt
+      #   Formato padrão sha256sum(1): verificável offline com
+      #   sha256sum -c auditor_forense.exe.sha256.txt
       - name: Generate SHA-256
         id: hash
         run: |
@@ -79,13 +79,13 @@ jobs:
       #   Gera e publica no GitHub a cadeia de proveniência do build (SLSA Level 2).
       #   Verificação posterior: gh attestation verify auditor_forense.exe --repo <owner>/<repo>
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@520d128f165991a6c774bcb264f7f9ac2ed5ea52 # v2.2.0
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: auditor_forense.exe
 
       # ── 7. GitHub Release com assets e notas geradas automaticamente ─────────────
       - name: Create Release
-        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.2.0
+        uses: softprops/action-gh-release@v2
         with:
           name: "Auditor Forense ${{ github.ref_name }}"
           generate_release_notes: true
