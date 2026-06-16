@@ -13,7 +13,6 @@ evidencias_ragnarok/
 # ── Go toolchain ───────────────────────────────────────────────────────────────
 # go.sum deve ser versionado; vendor/ normalmente não.
 vendor/
-/pkg/
 
 # Cobertura e perfis de performance
 *.coverprofile
