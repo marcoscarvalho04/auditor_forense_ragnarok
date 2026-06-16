@@ -16,15 +16,15 @@ import (
 	"strings"
 	"time"
 
-	"auditor-processos/pkg/admin"
-	"auditor-processos/pkg/artifacts"
-	"auditor-processos/pkg/color"
-	"auditor-processos/pkg/game"
-	"auditor-processos/pkg/packaging"
-	"auditor-processos/pkg/processes"
-	"auditor-processos/pkg/software"
-	"auditor-processos/pkg/sysinfo"
-	"auditor-processos/pkg/winlogs"
+	"github.com/siqueira-marcos/auditor-processos/pkg/admin"
+	"github.com/siqueira-marcos/auditor-processos/pkg/artifacts"
+	"github.com/siqueira-marcos/auditor-processos/pkg/color"
+	"github.com/siqueira-marcos/auditor-processos/pkg/game"
+	"github.com/siqueira-marcos/auditor-processos/pkg/packaging"
+	"github.com/siqueira-marcos/auditor-processos/pkg/processes"
+	"github.com/siqueira-marcos/auditor-processos/pkg/software"
+	"github.com/siqueira-marcos/auditor-processos/pkg/sysinfo"
+	"github.com/siqueira-marcos/auditor-processos/pkg/winlogs"
 )
 
 // Variáveis injetadas via -ldflags em tempo de build pelo CI.

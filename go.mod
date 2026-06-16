@@ -1,4 +1,4 @@
-module auditor-processos
+module github.com/siqueira-marcos/auditor-processos
 
 go 1.22
 
